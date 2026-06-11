@@ -1,0 +1,14 @@
+{
+    "早报": {"canonical": "arXiv Morning Brief", "type": "project", "alternates": []},
+    "学姐": {"canonical": "Cherry", "type": "person", "alternates": []},
+    "吃内存": {"canonical": "内存溢出", "type": "concept", "alternates": ["swap 风险", "OOM"]},
+    "考试": {"canonical": "考试", "type": "event", "alternates": ["测验", "测试", "期中", "期末"]},
+    "猫": {"canonical": "宠物", "type": "concept", "alternates": ["猫猫", "喵"]},
+    "项目": {"canonical": "项目", "type": "concept", "alternates": ["工程", "任务"]},
+    "心情不好": {"canonical": "负面情绪", "type": "concept", "alternates": ["难过", "伤心", "郁闷", "烦躁"]},
+    "心情好": {"canonical": "正面情绪", "type": "concept", "alternates": ["开心", "高兴", "爽"]},
+    "工作": {"canonical": "工作", "type": "concept", "alternates": ["上班", "打工"]},
+    "上学": {"canonical": "上学", "type": "concept", "alternates": ["上课", "学校"]},
+    "模型": {"canonical": "AI模型", "type": "concept", "alternates": ["大模型", "LLM"]},
+    "训练": {"canonical": "模型训练", "type": "concept", "alternates": ["微调", "fine-tune", "SFT"]}
+}

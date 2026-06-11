@@ -22,6 +22,7 @@ from core import AffectiveSubstrate
 from vad_analyzer import VADAnalyzer
 from episodic_memory import EpisodicMemory, MemoryRecord
 from knowledge_graph import KnowledgeGraph
+from alias_dict import AliasDict
 
 
 @dataclass
@@ -63,11 +64,18 @@ class MemoryManager:
         self,
         db_path: str = "episodic_memory.db",
         states_path: str = "user_states.json",
-        reflection_interval: int = 10,  # 每10轮触发一次reflection
-        mood_window: int = 5,           # mood trend窗口
-        counter_mood_threshold: float = 0.7,  # 连续同向情绪阈值
+        alias_dict_path: str = None,
+        reflection_interval: int = 10,
+        mood_window: int = 5,
+        counter_mood_threshold: float = 0.7,
     ):
-        self.memory = EpisodicMemory(db_path)
+        # 别名词典
+        if alias_dict_path:
+            self.alias_dict = AliasDict(alias_dict_path)
+        else:
+            self.alias_dict = None
+        
+        self.memory = EpisodicMemory(db_path, alias_dict=self.alias_dict)
         self.states_path = states_path
         self.vad = VADAnalyzer()
         self.reflection_interval = reflection_interval
@@ -76,7 +84,7 @@ class MemoryManager:
         
         # Knowledge Graph
         kg_path = db_path.replace('.db', '_kg.db')
-        self.kg = KnowledgeGraph(kg_path)
+        self.kg = KnowledgeGraph(kg_path, alias_dict=self.alias_dict)
         
         # 加载用户状态
         self.states: Dict[str, UserState] = {}
@@ -211,7 +219,7 @@ class MemoryManager:
         
         # 6. 自动存储episodic记忆
         importance = self._estimate_importance(user_input, vad)
-        self.memory.store(
+        mem_entity_id = self.memory.store(
             user_id=user_id,
             content=user_input,
             importance=importance,
@@ -219,6 +227,7 @@ class MemoryManager:
                 'valence': vad[1], 'arousal': vad[0],
                 'dominance': vad[2], 'stress': vad[3],
             },
+            tags=self._extract_auto_tags(user_input, vad),
             session_id=session_id,
         )
         
@@ -353,6 +362,39 @@ class MemoryManager:
                 break
         
         return min(importance, 1.0)
+    
+    def _extract_auto_tags(self, text: str, vad: List[float]) -> List[str]:
+        """自动提取标签"""
+        tags = []
+        
+        # 情感标签
+        if vad[1] < 0.3:
+            tags.append("negative")
+        elif vad[1] > 0.7:
+            tags.append("positive")
+        
+        if vad[3] > 0.7:
+            tags.append("stress")
+        if vad[0] > 0.7:
+            tags.append("excited")
+        
+        # 主题标签
+        topic_map = {
+            'pet': ['猫', '狗', '宠物', '小花', '小黑'],
+            'exam': ['考试', '测验', '期中', '期末', '成绩'],
+            'school': ['学校', '上课', '作业', '老师', '同学'],
+            'work': ['工作', '上班', '公司', '项目'],
+            'family': ['爸', '妈', '家人', '哥', '姐', '弟', '妹'],
+            'friend': ['朋友', '同学', '小李', '小王'],
+            'health': ['生病', '医院', '不舒服', '头疼'],
+            'interest': ['喜欢', '爱好', '兴趣', '物理', '数学', '编程'],
+        }
+        text_lower = text.lower()
+        for tag, keywords in topic_map.items():
+            if any(kw in text_lower for kw in keywords):
+                tags.append(tag)
+        
+        return tags
     
     def trigger_reflection(self, user_id: str, session_id: str = "") -> Optional[Dict]:
         """
